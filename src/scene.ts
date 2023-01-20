@@ -86,11 +86,8 @@ async function init() {
       color: 0xffffe5,
     })
 
-    scene.traverse((child) => {
-      if (child instanceof Mesh) {
-        child.material = bakedMaterial
-      }
-    })
+    const bakedScene = scene.getObjectByName('baked') as Mesh
+    bakedScene.material = bakedMaterial
 
     const lampLightA = scene.getObjectByName('lampLightA') as Mesh
     const lampLightB = scene.getObjectByName('lampLightB') as Mesh
