@@ -1,8 +1,6 @@
 import GUI from 'lil-gui'
 import {
   AxesHelper,
-  Clock,
-  GridHelper,
   LoadingManager,
   Mesh,
   MeshBasicMaterial,
@@ -15,7 +13,6 @@ import {
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import * as animations from './animations'
 import { toggleFullScreen } from './helpers/fullscreen'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
 import './style.css'
@@ -26,14 +23,10 @@ let canvas: HTMLElement
 let renderer: WebGLRenderer
 let scene: Scene
 let loadingManager: LoadingManager
-let cube: Mesh
 let camera: PerspectiveCamera
 let cameraControls: OrbitControls
 let axesHelper: AxesHelper
-let clock: Clock
 let gui: GUI
-
-const animation = { enabled: false, play: true }
 
 init().then(() => animate())
 
@@ -135,16 +128,6 @@ async function init() {
     axesHelper = new AxesHelper(4)
     axesHelper.visible = false
     scene.add(axesHelper)
-
-    const gridHelper = new GridHelper(20, 20, 'teal', 'darkgray')
-    gridHelper.position.y = -0.01
-    gridHelper.visible = false
-    scene.add(gridHelper)
-  }
-
-  // ===== 📈 STATS & CLOCK =====
-  {
-    clock = new Clock()
   }
 
   // ==== 🐞 DEBUG GUI ====
@@ -168,16 +151,13 @@ async function init() {
     if (guiState) gui.load(JSON.parse(guiState))
 
     gui.close()
+
+    gui.hide()
   }
 }
 
 function animate() {
   requestAnimationFrame(animate)
-
-  if (animation.enabled && animation.play) {
-    animations.rotate(cube, clock, Math.PI / 3)
-    animations.bounce(cube, clock, 1, 0.5, 0.5)
-  }
 
   if (resizeRendererToDisplaySize(renderer)) {
     const canvas = renderer.domElement
