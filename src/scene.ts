@@ -127,7 +127,7 @@ async function init() {
     scene.add(axesHelper)
   }
 
-  // ==== 🐞 DEBUG GUI ====
+  // ===== 🐞 DEBUG GUI =====
   {
     gui = new GUI({ title: '🐞 Debug GUI', width: 300 })
 
