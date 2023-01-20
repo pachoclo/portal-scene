@@ -1,11 +1,16 @@
 import GUI from 'lil-gui'
 import {
   AxesHelper,
+  BufferAttribute,
+  BufferGeometry,
   LoadingManager,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
+  Points,
+  PointsMaterial,
   Scene,
+  ShaderMaterial,
   sRGBEncoding,
   TextureLoader,
   Vector3,
@@ -17,6 +22,12 @@ import { toggleFullScreen } from './helpers/fullscreen'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
 import './style.css'
 
+import firefliesVertexShader from './shaders/fireflies/vertex.glsl'
+import firefliesFragmentShader from './shaders/fireflies/fragment.glsl'
+
+console.log(firefliesVertexShader)
+console.log(firefliesFragmentShader)
+
 const CANVAS_ID = 'scene'
 
 let canvas: HTMLElement
@@ -27,6 +38,11 @@ let camera: PerspectiveCamera
 let cameraControls: OrbitControls
 let axesHelper: AxesHelper
 let gui: GUI
+let fireflies: Points
+
+const state = {
+  clearColor: '#1e2129',
+}
 
 init().then(() => animate())
 
@@ -37,6 +53,7 @@ async function init() {
     renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.outputEncoding = sRGBEncoding
+    renderer.setClearColor(state.clearColor)
     scene = new Scene()
   }
 
@@ -96,6 +113,38 @@ async function init() {
     lampLightA.material = lampMaterial
     lampLightB.material = lampMaterial
     portalLight.material = lampMaterial
+
+    // Fireflies
+
+    const firefliesCount = 30
+    const firefliesGeometry = new BufferGeometry()
+    const positions = new Float32Array(firefliesCount * 3)
+
+    for (let i = 0; i < firefliesCount; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 4 // x
+      positions[i * 3 + 1] = Math.random() * 1.5 // y
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 4 // z
+    }
+
+    firefliesGeometry.setAttribute('position', new BufferAttribute(positions, 3))
+
+    const firefliesMaterial = new ShaderMaterial({
+      vertexShader: firefliesVertexShader,
+      fragmentShader: firefliesFragmentShader,
+      uniforms: {
+        uPixelRatio: { value: renderer.getPixelRatio() },
+        uSize: { value: 100 },
+      },
+    })
+
+    window.addEventListener('resize', () => {
+      // Update fireflies
+      firefliesMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2)
+    })
+
+    fireflies = new Points(firefliesGeometry, firefliesMaterial)
+
+    scene.add(fireflies)
   }
 
   // ===== 🎥 CAMERA =====
@@ -131,11 +180,24 @@ async function init() {
   {
     gui = new GUI({ title: '🐞 Debug GUI', width: 300 })
 
+    gui.addColor(state, 'clearColor').onChange(() => renderer.setClearColor(state.clearColor))
+
+    const firefliesMaterial = fireflies.material as ShaderMaterial
+    gui
+      .add(firefliesMaterial.uniforms.uSize, 'value')
+      .min(0.1)
+      .max(500)
+      .step(1)
+      .name('firefly size')
+
     const helpersFolder = gui.addFolder('Helpers')
     helpersFolder.add(axesHelper, 'visible').name('axes')
 
     const cameraFolder = gui.addFolder('Camera')
     cameraFolder.add(cameraControls, 'autoRotate')
+
+    gui.close()
+    // gui.hide()
 
     // persist GUI state in local storage on changes
     gui.onFinishChange(() => {
@@ -146,10 +208,6 @@ async function init() {
     // load GUI state if available in local storage
     const guiState = localStorage.getItem('guiState')
     if (guiState) gui.load(JSON.parse(guiState))
-
-    gui.close()
-
-    gui.hide()
   }
 }
 
