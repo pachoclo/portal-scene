@@ -4,6 +4,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   Clock,
+  Color,
   LoadingManager,
   Mesh,
   MeshBasicMaterial,
@@ -27,6 +28,9 @@ import GUI from 'lil-gui'
 import firefliesFragmentShader from './shaders/fireflies/fragment.glsl'
 import firefliesVertexShader from './shaders/fireflies/vertex.glsl'
 
+import portalFragmentShader from './shaders/portal/fragment.glsl'
+import portalVertexShader from './shaders/portal/vertex.glsl'
+
 import './style.css'
 
 const CANVAS_ID = 'scene'
@@ -41,6 +45,14 @@ let axesHelper: AxesHelper
 let gui: GUI
 let clock: Clock
 let fireflies: Points
+let portalLight: Mesh
+
+const config = {
+  portal: {
+    colorStart: new Color('#c4c4ac'),
+    colorEnd: new Color('#4c7976'),
+  },
+}
 
 init().then(() => animate())
 
@@ -79,8 +91,6 @@ async function init() {
 
   // ===== 📦 OBJECTS =====
   {
-    // Portal
-
     // Scene
     const gltfLoader = new GLTFLoader(loadingManager)
     const portalGltf = await gltfLoader.loadAsync('/portal-scene.glb')
@@ -108,15 +118,13 @@ async function init() {
 
     const lampLightA = scene.getObjectByName('lampLightA') as Mesh
     const lampLightB = scene.getObjectByName('lampLightB') as Mesh
-    const portalLight = scene.getObjectByName('portalLight') as Mesh
 
     lampLightA.material = lampMaterial
     lampLightB.material = lampMaterial
-    portalLight.material = lampMaterial
 
     // Fireflies
 
-    const firefliesCount = 100
+    const firefliesCount = 50
     const firefliesGeometry = new BufferGeometry()
     const positions = new Float32Array(firefliesCount * 3)
 
@@ -137,7 +145,7 @@ async function init() {
       uniforms: {
         uTime: { value: 0 },
         uPixelRatio: { value: renderer.getPixelRatio() },
-        uSize: { value: 50 },
+        uSize: { value: 80 },
       },
       vertexShader: firefliesVertexShader,
       fragmentShader: firefliesFragmentShader,
@@ -154,18 +162,33 @@ async function init() {
     fireflies.name = 'Fireflies'
 
     scene.add(fireflies)
+
+    // Portal
+
+    const portalMaterial = new ShaderMaterial({
+      vertexShader: portalVertexShader,
+      fragmentShader: portalFragmentShader,
+      uniforms: {
+        uTime: { value: 0 },
+        uColorStart: { value: config.portal.colorStart },
+        uColorEnd: { value: config.portal.colorEnd },
+      },
+    })
+
+    portalLight = scene.getObjectByName('portalLight') as Mesh
+    portalLight.material = portalMaterial
   }
 
   // ===== 🎥 CAMERA =====
   {
     camera = new PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100)
-    camera.position.set(1.5, 3, 4.8)
+    camera.position.set(2.42, 3.34, 5.96)
   }
 
   // ===== 🕹️ CONTROLS =====
   {
     cameraControls = new OrbitControls(camera, canvas)
-    cameraControls.target = new Vector3(0, 0, 0)
+    cameraControls.target = new Vector3(-0.429, 0.26, 0.129)
     cameraControls.enableDamping = true
     cameraControls.autoRotate = false
     cameraControls.update()
@@ -196,6 +219,7 @@ async function init() {
 
     const firefliesFolder = gui.addFolder('Fireflies')
     const firefliesMaterial = fireflies.material as ShaderMaterial
+    firefliesFolder.close()
     firefliesFolder
       .add(firefliesMaterial.uniforms.uSize, 'value')
       .min(0.1)
@@ -203,14 +227,19 @@ async function init() {
       .step(1)
       .name('size')
 
+    const portalFolder = gui.addFolder('Portal')
+    portalFolder.addColor(config.portal, 'colorStart')
+    portalFolder.addColor(config.portal, 'colorEnd')
+
     const helpersFolder = gui.addFolder('Helpers')
     helpersFolder.add(axesHelper, 'visible').name('axes')
+    helpersFolder.close()
 
     const cameraFolder = gui.addFolder('Camera')
     cameraFolder.add(cameraControls, 'autoRotate')
+    cameraFolder.close()
 
-    gui.close()
-    // gui.hide()
+    gui.hide()
 
     // persist GUI state in local storage on changes
     gui.onFinishChange(() => {
@@ -242,5 +271,9 @@ function animate() {
   const firefliesMaterial = fireflies.material as ShaderMaterial
   firefliesMaterial.uniforms.uTime.value = elapsedTime
 
+  const portalMaterial = portalLight.material as ShaderMaterial
+  portalMaterial.uniforms.uTime.value = elapsedTime
+
+  // Render scene
   renderer.render(scene, camera)
 }
