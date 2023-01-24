@@ -27,7 +27,6 @@ import GUI from 'lil-gui'
 
 import firefliesFragmentShader from './shaders/fireflies/fragment.glsl'
 import firefliesVertexShader from './shaders/fireflies/vertex.glsl'
-
 import portalFragmentShader from './shaders/portal/fragment.glsl'
 import portalVertexShader from './shaders/portal/vertex.glsl'
 
@@ -44,13 +43,16 @@ let cameraControls: OrbitControls
 let axesHelper: AxesHelper
 let gui: GUI
 let clock: Clock
-let fireflies: Points
+let fireflies: Points<BufferGeometry, ShaderMaterial>
 let portalLight: Mesh
 
 const config = {
   portal: {
     colorStart: new Color('#c4c4ac'),
     colorEnd: new Color('#4c7976'),
+  },
+  fireflies: {
+    count: 80,
   },
 }
 
@@ -85,13 +87,10 @@ async function init() {
     }
   }
 
-  // ===== 💡 LIGHTS =====
-  {
-  }
-
   // ===== 📦 OBJECTS =====
   {
-    // Scene
+    // Load the whole Scene and adjust position
+
     const gltfLoader = new GLTFLoader(loadingManager)
     const portalGltf = await gltfLoader.loadAsync('/portal-scene.glb')
     scene.add(portalGltf.scene)
@@ -100,46 +99,21 @@ async function init() {
     sceneMesh.position.set(0, 0, 0.7)
 
     // Textures
+
     const textureLoader = new TextureLoader(loadingManager)
     const bakedTexture = await textureLoader.loadAsync('/baked.jpg')
     bakedTexture.flipY = false
     bakedTexture.encoding = sRGBEncoding
 
     // Materials
+
     const bakedMaterial = new MeshBasicMaterial({
       map: bakedTexture,
     })
+
     const lampMaterial = new MeshBasicMaterial({
       color: 0xffffe5,
     })
-
-    const bakedScene = scene.getObjectByName('baked') as Mesh
-    bakedScene.material = bakedMaterial
-
-    const lampLightA = scene.getObjectByName('lampLightA') as Mesh
-    const lampLightB = scene.getObjectByName('lampLightB') as Mesh
-
-    lampLightA.material = lampMaterial
-    lampLightB.material = lampMaterial
-
-    // Fireflies
-
-    const firefliesCount = 50
-    const firefliesGeometry = new BufferGeometry()
-    const positions = new Float32Array(firefliesCount * 3)
-
-    const scaleArray = new Float32Array(firefliesCount)
-
-    for (let i = 0; i < firefliesCount; i++) {
-      positions[i * 3 + 0] = (Math.random() - 0.5) * 4 // x
-      positions[i * 3 + 1] = Math.random() * 1.5 // y
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 4 // z
-
-      scaleArray[i] = Math.random()
-    }
-
-    firefliesGeometry.setAttribute('position', new BufferAttribute(positions, 3))
-    firefliesGeometry.setAttribute('aScale', new BufferAttribute(scaleArray, 1))
 
     const firefliesMaterial = new ShaderMaterial({
       uniforms: {
@@ -158,13 +132,6 @@ async function init() {
       firefliesMaterial.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio, 2)
     })
 
-    fireflies = new Points(firefliesGeometry, firefliesMaterial)
-    fireflies.name = 'Fireflies'
-
-    scene.add(fireflies)
-
-    // Portal
-
     const portalMaterial = new ShaderMaterial({
       vertexShader: portalVertexShader,
       fragmentShader: portalFragmentShader,
@@ -174,6 +141,45 @@ async function init() {
         uColorEnd: { value: config.portal.colorEnd },
       },
     })
+
+    // Baked Scene
+
+    const bakedScene = scene.getObjectByName('baked') as Mesh
+    bakedScene.material = bakedMaterial
+
+    // Lamps
+
+    const lampLightA = scene.getObjectByName('lampLightA') as Mesh
+    const lampLightB = scene.getObjectByName('lampLightB') as Mesh
+
+    lampLightA.material = lampMaterial
+    lampLightB.material = lampMaterial
+
+    // Fireflies
+
+    const firefliesGeometry = new BufferGeometry()
+    const firefliesCount = config.fireflies.count
+
+    const positions = new Float32Array(firefliesCount * 3)
+    const scaleArray = new Float32Array(firefliesCount)
+
+    for (let i = 0; i < firefliesCount; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 4 // x
+      positions[i * 3 + 1] = Math.random() * 1.5 // y
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 4 // z
+
+      scaleArray[i] = Math.random()
+    }
+
+    firefliesGeometry.setAttribute('position', new BufferAttribute(positions, 3))
+    firefliesGeometry.setAttribute('aScale', new BufferAttribute(scaleArray, 1))
+
+    fireflies = new Points(firefliesGeometry, firefliesMaterial)
+    fireflies.name = 'Fireflies'
+
+    scene.add(fireflies)
+
+    // Portal
 
     portalLight = scene.getObjectByName('portalLight') as Mesh
     portalLight.material = portalMaterial
@@ -218,10 +224,9 @@ async function init() {
     gui = new GUI({ title: '🐞 Debug GUI', width: 300 })
 
     const firefliesFolder = gui.addFolder('Fireflies')
-    const firefliesMaterial = fireflies.material as ShaderMaterial
     firefliesFolder.close()
     firefliesFolder
-      .add(firefliesMaterial.uniforms.uSize, 'value')
+      .add(fireflies.material.uniforms.uSize, 'value')
       .min(0.1)
       .max(500)
       .step(1)
@@ -239,8 +244,6 @@ async function init() {
     cameraFolder.add(cameraControls, 'autoRotate')
     cameraFolder.close()
 
-    gui.hide()
-
     // persist GUI state in local storage on changes
     gui.onFinishChange(() => {
       const guiState = gui.save()
@@ -249,7 +252,11 @@ async function init() {
 
     // load GUI state if available in local storage
     const guiState = localStorage.getItem('guiState')
-    if (guiState) gui.load(JSON.parse(guiState))
+    if (guiState) {
+      gui.load(JSON.parse(guiState))
+    }
+
+    gui.hide()
   }
 }
 
