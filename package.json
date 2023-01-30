@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "lil-gui": "^0.17.0",
-    "three": "^0.148.0"
+    "three": "^0.149.0"
   },
   "prettier": {
     "semi": false,
