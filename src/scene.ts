@@ -92,13 +92,13 @@ async function init() {
     // Load the whole Scene and adjust position
 
     const gltfLoader = new GLTFLoader(loadingManager)
-    const portalGltf = await gltfLoader.loadAsync('/portal-scene.glb')
+    const portalGltf = await gltfLoader.loadAsync('/portal_scene_v3.glb')
     scene.add(portalGltf.scene)
 
     const sceneMesh = scene.getObjectByName('Scene') as Mesh
     sceneMesh.position.set(0, 0, 0.7)
 
-    // Textures
+    // Baked Texture
 
     const textureLoader = new TextureLoader(loadingManager)
     const bakedTexture = await textureLoader.loadAsync('/baked.jpg')
