@@ -10,9 +10,9 @@ import {
   MeshBasicMaterial,
   PerspectiveCamera,
   Points,
+  SRGBColorSpace,
   Scene,
   ShaderMaterial,
-  sRGBEncoding,
   TextureLoader,
   Vector3,
   WebGLRenderer,
@@ -48,8 +48,8 @@ let portalLight: Mesh
 
 const config = {
   portal: {
-    colorStart: new Color('#c4c4ac'),
-    colorEnd: new Color('#4c7976'),
+    colorStart: new Color('LightCyan'),
+    colorEnd: new Color('LightBlue'),
   },
   fireflies: {
     count: 80,
@@ -64,7 +64,7 @@ async function init() {
     canvas = document.querySelector(`canvas#${CANVAS_ID}`)!
     renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.outputEncoding = sRGBEncoding
+    renderer.outputColorSpace = SRGBColorSpace
     scene = new Scene()
   }
 
@@ -103,7 +103,7 @@ async function init() {
     const textureLoader = new TextureLoader(loadingManager)
     const bakedTexture = await textureLoader.loadAsync('/baked.jpg')
     bakedTexture.flipY = false
-    bakedTexture.encoding = sRGBEncoding
+    bakedTexture.colorSpace = SRGBColorSpace
 
     // Materials
 

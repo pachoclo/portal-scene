@@ -92,20 +92,20 @@ float cnoise(vec3 P)
 void main()
 {
   // displacement
-  vec2 displacedUv = vUv + cnoise(vec3(vUv * 5.0, uTime * 0.1));
+  vec2 displacedUv = vUv + cnoise(vec3(vUv * 4.0, uTime * 0.1));
 
   // perlin noise
   float strength = cnoise(vec3(displacedUv * 5.0, uTime * 0.2));
 
   // outer glow
-  float outerGlow = distance(vUv, vec2(0.5)) * 5.0 - 1.2;
+  float outerGlow = distance(vUv, vec2(0.5)) * 4.0 - 1.2;
   strength += outerGlow;
 
   // use step to sharpen portal pattern
-  strength += step(-0.2, strength) * 1.5;
+  strength += step(-0.2, strength) * 1.9;
 
   // clamp value from 0 to 1
-  // strength = clamp(strength, 0.0, 1.0);
+  // strength = clamp(strength, 0.0, .7);
 
   // final color
   vec3 color = mix(uColorStart, uColorEnd, strength);
